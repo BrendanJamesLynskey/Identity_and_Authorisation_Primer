@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Identity &amp; Authorisation — A Primer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+<style>
+  :root {
+    --amber:  #f5a623;
+    --green:  #4ecb8d;
+    --purple: #a78bfa;
+    --blue:   #60a5fa;
+    --red:    #f87171;
+    --bg:     #0a0a0f;
+    --bg2:    #10101a;
+    --bg3:    #181824;
+    --border: #2a2a3a;
+    --text:   #e8e8f0;
+    --muted:  #8888a8;
+  }
+
+  .reveal-viewport { background: var(--bg); }
+  .reveal .slides section { background: transparent; }
+
+  .reveal { font-family: 'DM Sans', sans-serif; color: var(--text); }
+  .reveal h1, .reveal h2, .reveal h3 { font-family: 'Playfair Display', serif; font-weight: 700; }
+  .reveal h1 { font-size: 1.6em; color: var(--amber); line-height: 1.1; }
+  .reveal h2 { font-size: 1.1em; color: var(--amber); margin-bottom: .2em; }
+  .reveal h3 { font-size: .78em; color: var(--green); margin-bottom: .15em; }
+  .reveal p  { font-size: .56em; line-height: 1.45; color: var(--text); }
+  .reveal li { font-size: .54em; line-height: 1.45; margin-bottom: .1em; }
+  .reveal code { font-family: 'JetBrains Mono', monospace; font-size: .72em; }
+  .reveal pre  { box-shadow: none; background: var(--bg3); border: 1px solid var(--border);
+                 border-radius: 6px; padding: .3em .5em; margin: .25em 0; }
+  .reveal pre code { font-size: .52em; line-height: 1.35; background: transparent; color: #cdd6f4; }
+
+  .slide-hdr {
+    display: flex; align-items: center; gap: .4em;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: .2em; margin-bottom: .3em;
+  }
+  .slide-hdr .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .42em; font-weight: 500;
+    color: var(--bg); background: var(--amber);
+    padding: .1em .4em; border-radius: 3px;
+    letter-spacing: .04em;
+  }
+  .slide-hdr h2 { margin: 0; font-size: .95em; }
+
+  .cols   { display: grid; gap: .5em; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-6040 { grid-template-columns: 6fr 4fr; }
+  .cols-4060 { grid-template-columns: 4fr 6fr; }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 6px; padding: .35em .6em;
+  }
+  .card.amber { border-left: 3px solid var(--amber); }
+  .card.green { border-left: 3px solid var(--green); }
+  .card.purple{ border-left: 3px solid var(--purple); }
+  .card.blue  { border-left: 3px solid var(--blue); }
+  .card.red   { border-left: 3px solid var(--red); }
+  .card h3 { font-size: .64em; margin: 0 0 .12em; }
+  .card p  { font-size: .52em; margin: 0; color: #b8b8d0; }
+  .card ul { margin: 0; padding-left: 1em; }
+  .card li { font-size: .52em; color: #b8b8d0; margin-bottom: .02em; }
+
+  .reveal table { width: 100%; border-collapse: collapse; font-size: .5em; }
+  .reveal table th { background: var(--bg3); color: var(--amber); font-weight: 600;
+                     padding: .2em .4em; border: 1px solid var(--border); text-align: left; }
+  .reveal table td { padding: .18em .4em; border: 1px solid var(--border); color: #ccc; }
+  .reveal table tr:nth-child(even) td { background: #0e0e18; }
+
+  .a  { color: var(--amber); font-weight: 600; }
+  .g  { color: var(--green); font-weight: 600; }
+  .p  { color: var(--purple); font-weight: 600; }
+  .b  { color: var(--blue); font-weight: 600; }
+  .r  { color: var(--red); font-weight: 600; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  svg.diagram { display: block; margin: 0 auto; overflow: visible; }
+
+  .pill {
+    display: inline-block; font-family: 'JetBrains Mono', monospace;
+    font-size: .44em; padding: .08em .4em; border-radius: 99px;
+    border: 1px solid; margin: 0 .08em;
+  }
+  .pill.amber { color: var(--amber); border-color: var(--amber); }
+  .pill.green { color: var(--green); border-color: var(--green); }
+  .pill.purple{ color: var(--purple); border-color: var(--purple); }
+  .pill.blue  { color: var(--blue); border-color: var(--blue); }
+
+  .reveal .slide-footer { display: none; }
+  .title-slide h1 { font-size: 1.8em; }
+  .title-slide .subtitle {
+    font-size: .7em; color: var(--green); font-family: 'DM Sans', sans-serif;
+    font-weight: 300; letter-spacing: .04em; margin: .3em 0 .6em;
+  }
+  .title-slide .meta { font-size: .48em; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  .ss-row {
+    display: flex; gap: .25em; align-items: center;
+    margin: .1em 0; font-size: .55em; font-family: 'JetBrains Mono', monospace;
+  }
+  .ss-node {
+    padding: .2em .55em; border-radius: 5px; font-size: .9em;
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  }
+  .ss-node.active { background: #1a2a1a; border-color: var(--green); color: var(--green); }
+  .ss-node.done   { background: #1a1a2a; border-color: var(--purple); color: var(--purple); }
+  .ss-arrow { color: var(--amber); }
+  .ss-label { font-size: .8em; color: var(--muted); margin-left: .3em; }
+
+  .reveal ul, .reveal ol { margin: .15em 0 .15em 1em; }
+.reveal .slides > section { display: flex !important; flex-direction: column !important; overflow-y: auto !important; align-items: stretch !important; justify-content: flex-start !important; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+
+<!-- ═══════════════════════════════ SLIDE 01 — TITLE ═══════════════════════════════ -->
+<section class="title-slide" data-background-color="#0a0a0f">
+  <div style="text-align:left; max-width:820px; margin:0 auto; padding: 1em 0;">
+    <div style="font-family:'JetBrains Mono',monospace; font-size:.5em; color:var(--muted); margin-bottom:.4em; letter-spacing:.1em;">
+      TECHNICAL PRESENTATION &middot; SERIES PRIMER &mdash; READ FIRST
+    </div>
+    <h1>Identity &amp; Authorisation<br>A Primer</h1>
+    <div class="subtitle">Sixty years of asking <em>"who are you?"</em> and <em>"what may you do?"</em> — and how we got here</div>
+    <div style="width:60px; height:3px; background:var(--amber); margin-bottom:1.4em;"></div>
+    <div style="display:flex; gap:1.2em; flex-wrap:wrap; margin-bottom:1em;">
+      <span class="pill amber">No code</span>
+      <span class="pill green">No RFCs in the body</span>
+      <span class="pill purple">The whole field on one map</span>
+      <span class="pill blue">~20 minutes</span>
+    </div>
+    <div class="ss-row" style="margin-top:0.6em;">
+      <span class="ss-node active">🪪 who</span>
+      <span class="ss-arrow">→</span>
+      <span class="ss-node active">🔑 prove</span>
+      <span class="ss-arrow">→</span>
+      <span class="ss-node active">📜 may</span>
+      <span class="ss-arrow">→</span>
+      <span class="ss-node done">📑 audit</span>
+    </div>
+    <p style="max-width:680px; color:#a0a0c0; font-size:.56em; line-height:1.5; margin-top:1em;">
+      The gateway deck for the <em>Identity &amp; Access</em> and <em>Authorisation</em> series. Why these problems exist, the four eras of the field, the threat landscape, the standards lineage, and a roadmap to every other deck.
+    </p>
+    <div class="meta" style="margin-top:1.4em;">
+      Story &nbsp;·&nbsp; Vocabulary &nbsp;·&nbsp; Map &nbsp;·&nbsp; Roadmap
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 02 — TOPICS ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">01</span>
+    <h2>Topics</h2>
+  </div>
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3 class="a">The story</h3>
+        <ul>
+          <li>Why identity exists at all — the original multi-user problem</li>
+          <li>AuthN vs AuthZ — the defining pair, separated</li>
+          <li>Four eras: mainframe → web → mobile/cloud → agent &amp; wallet</li>
+          <li>The threat landscape that shaped each era's primitives</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.5em;">
+        <h3 class="g">The vocabulary</h3>
+        <ul>
+          <li>Principal · credential · token · scope · audience · claim</li>
+          <li>IdP · RP · PEP · PDP · PIP · PAP — the alphabet soup, decoded</li>
+          <li>North-south vs east-west — the two axes of authorisation</li>
+          <li>Federation, delegation, impersonation — the three confusing words</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">The map</h3>
+        <ul>
+          <li>Standards landscape — IETF / OIDF / OASIS / W3C / FIDO / NIST / CNCF</li>
+          <li>The AuthN conceptual map — methods, federation, workload identity</li>
+          <li>The AuthZ conceptual map — RBAC → ABAC → ReBAC, engines, topologies</li>
+          <li>Build vs buy — IDaaS providers vs open source vs roll-your-own</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.5em;">
+        <h3 class="b">The roadmap</h3>
+        <ul>
+          <li>The legal &amp; regulatory backdrop driving the next five years</li>
+          <li>How the eleven decks in this series fit together</li>
+          <li>A reading order: where to start by role and by goal</li>
+          <li>Three sentences you can screenshot and quote</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 03 — WHY IDENTITY ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">02</span>
+    <h2>Why Identity Exists at All — The Original Problem</h2>
+  </div>
+  <p>A computer for one user has no need for identity. The moment a second user shares the machine — or the network — three problems appear at once: <span class="b">tell us apart</span>, <span class="a">limit the damage we can do to each other</span>, and <span class="g">have a record of who did what</span>. Every spec in this field — passwords, Kerberos, SAML, OAuth, OIDC, SPIFFE, OPA, MCP — is an attempt to solve one of those three problems for a particular topology.</p>
+
+  <svg class="diagram" viewBox="0 0 940 280" width="900" height="280">
+    <!-- single user -->
+    <rect x="20" y="40" width="200" height="80" rx="10" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="120" y="70" text-anchor="middle" fill="#60a5fa" font-family="Playfair Display,serif" font-size="14" font-weight="700">Single user</text>
+    <text x="120" y="92" text-anchor="middle" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">no identity needed</text>
+    <text x="120" y="108" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">(home computer, calculator)</text>
+
+    <text x="260" y="80" fill="#a78bfa" font-family="JetBrains Mono,monospace" font-size="11">+ second user</text>
+    <line x1="225" y1="80" x2="345" y2="80" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#a03a)"/>
+
+    <!-- three problems -->
+    <rect x="350" y="20" width="280" height="60" rx="8" fill="#1a2a1a" stroke="#4ecb8d" stroke-width="1.5"/>
+    <text x="490" y="42" text-anchor="middle" fill="#4ecb8d" font-family="Playfair Display,serif" font-size="13" font-weight="700">1. Tell us apart</text>
+    <text x="490" y="60" text-anchor="middle" fill="#ccc" font-family="DM Sans,sans-serif" font-size="11">→ Authentication (AuthN)</text>
+
+    <rect x="350" y="90" width="280" height="60" rx="8" fill="#2a1a1a" stroke="#f5a623" stroke-width="1.5"/>
+    <text x="490" y="112" text-anchor="middle" fill="#f5a623" font-family="Playfair Display,serif" font-size="13" font-weight="700">2. Limit damage we can do</text>
+    <text x="490" y="130" text-anchor="middle" fill="#ccc" font-family="DM Sans,sans-serif" font-size="11">→ Authorisation (AuthZ)</text>
+
+    <rect x="350" y="160" width="280" height="60" rx="8" fill="#1a1a2a" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="490" y="182" text-anchor="middle" fill="#a78bfa" font-family="Playfair Display,serif" font-size="13" font-weight="700">3. Record who did what</text>
+    <text x="490" y="200" text-anchor="middle" fill="#ccc" font-family="DM Sans,sans-serif" font-size="11">→ Audit / non-repudiation</text>
+
+    <!-- examples -->
+    <text x="660" y="48" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">passwords · passkeys · SAML · OIDC</text>
+    <text x="660" y="118" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">scopes · RBAC · ABAC · ReBAC · OPA</text>
+    <text x="660" y="188" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">syslog · CAEP · SSF · audit pipelines</text>
+
+    <text x="470" y="252" text-anchor="middle" fill="#888" font-family="DM Sans,sans-serif" font-size="11" font-style="italic">Saltzer &amp; Schroeder, 1975: "least privilege" and "fail-safe defaults" already named all three. We've been building tools to honour them ever since.</text>
+
+    <defs>
+      <marker id="a03a" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7" fill="#a78bfa"/></marker>
+    </defs>
+  </svg>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 04 — AUTHN VS AUTHZ ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">03</span>
+    <h2>The Defining Pair — AuthN vs AuthZ</h2>
+  </div>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card blue">
+        <h3 class="b">Authentication (AuthN) — "<em>who are you?</em>"</h3>
+        <ul>
+          <li><span class="b">Input:</span> a credential — password, OTP, biometric, signing key, certificate</li>
+          <li><span class="b">Output:</span> a verified <em>claim</em> — "this principal is alice@example.com" (or "this workload is spiffe://prod/orders")</li>
+          <li><span class="b">Failure mode:</span> <em>impersonation</em> — someone proves to be you who isn't</li>
+          <li><span class="b">Standards owners:</span> FIDO Alliance, IETF, W3C, OIDF, NIST</li>
+        </ul>
+      </div>
+      <div class="card amber" style="margin-top:0.4em;">
+        <h3 class="a">Authorisation (AuthZ) — "<em>what may you do?</em>"</h3>
+        <ul>
+          <li><span class="a">Input:</span> the verified principal + an action + a resource + (often) context (time, IP, risk score)</li>
+          <li><span class="a">Output:</span> a binary decision — <em>permit</em> / <em>deny</em> — plus an audit-ready reason</li>
+          <li><span class="a">Failure mode:</span> <em>privilege escalation</em> — doing something you weren't permitted to do</li>
+          <li><span class="a">Standards owners:</span> OASIS (XACML), CNCF (OPA, OpenFGA), AWS / GCP / Azure (cloud IAM), Cedar (Amazon)</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card green">
+        <h3 class="g">Three concepts that live <em>between</em> them</h3>
+        <ul>
+          <li><span class="g">Federation</span> — one IdP authenticates, many RPs trust the result. SAML, OIDC, OpenID Federation 1.0.</li>
+          <li><span class="g">Delegation</span> — Alice lets an app act <em>on her behalf</em> with a narrowed scope. OAuth's whole reason for existing.</li>
+          <li><span class="g">Impersonation</span> — a service acts <em>as</em> a user (lossless). Token Exchange (RFC 8693). Logged carefully.</li>
+        </ul>
+      </div>
+      <div class="card purple" style="margin-top:0.4em;">
+        <h3 class="p">Why the confusion is fatal</h3>
+        <p>Many real incidents — Capital One 2019, Optus 2022, Microsoft Storm-0558 2023 — start because someone treated "the request authenticated successfully" as if it implied "the request was authorised". <em>It does not.</em> They are different decisions, computed by different code, often by different teams, against different policy sources.</p>
+      </div>
+      <div class="card red" style="margin-top:0.4em;">
+        <h3 class="r">Memorable rule</h3>
+        <p>"AuthN is the bouncer at the door. AuthZ is the wristband that says which rooms you can enter. Audit is the CCTV that says where you actually went."</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 05 — HISTORY I ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">04</span>
+    <h2>A Brief History I — The Mainframe &amp; Network Era (1961-1995)</h2>
+  </div>
+  <p>The first thirty years are the story of moving identity from <em>"a file on this machine"</em> to <em>"a service trusted across many machines"</em>. Every primitive we still use — shared secret, ticket, directory, certificate — was invented here.</p>
+
+  <svg class="diagram" viewBox="0 0 940 240" width="920" height="240">
+    <line x1="40" y1="120" x2="900" y2="120" stroke="#2a2a3a" stroke-width="2"/>
+    <line x1="40" y1="115" x2="40" y2="125" stroke="#888" stroke-width="2"/>
+    <line x1="900" y1="115" x2="900" y2="125" stroke="#888" stroke-width="2"/>
+    <text x="40" y="145" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">1961</text>
+    <text x="900" y="145" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">1995</text>
+
+    <!-- events: each is a tick + label above + secondary below -->
+    <g font-family="JetBrains Mono,monospace" font-size="10">
+      <line x1="80"  y1="115" x2="80"  y2="125" stroke="#60a5fa" stroke-width="2"/>
+      <text x="80"  y="105" text-anchor="middle" fill="#60a5fa" font-weight="700">1961</text>
+      <text x="80"  y="92"  text-anchor="middle" fill="#ccc">CTSS</text>
+      <text x="80"  y="160" text-anchor="middle" fill="#888">first password file</text>
+
+      <line x1="200" y1="115" x2="200" y2="125" stroke="#a78bfa" stroke-width="2"/>
+      <text x="200" y="105" text-anchor="middle" fill="#a78bfa" font-weight="700">1975</text>
+      <text x="200" y="92"  text-anchor="middle" fill="#ccc">Saltzer &amp; Schroeder</text>
+      <text x="200" y="160" text-anchor="middle" fill="#888">least privilege · fail-safe</text>
+
+      <line x1="320" y1="115" x2="320" y2="125" stroke="#4ecb8d" stroke-width="2"/>
+      <text x="320" y="105" text-anchor="middle" fill="#4ecb8d" font-weight="700">1978</text>
+      <text x="320" y="92"  text-anchor="middle" fill="#ccc">Needham-Schroeder</text>
+      <text x="320" y="160" text-anchor="middle" fill="#888">tickets, replay attacks</text>
+
+      <line x1="450" y1="115" x2="450" y2="125" stroke="#f5a623" stroke-width="2"/>
+      <text x="450" y="105" text-anchor="middle" fill="#f5a623" font-weight="700">1988</text>
+      <text x="450" y="92"  text-anchor="middle" fill="#ccc">Kerberos v4 (MIT)</text>
+      <text x="450" y="160" text-anchor="middle" fill="#888">trusted third party at scale</text>
+
+      <line x1="580" y1="115" x2="580" y2="125" stroke="#60a5fa" stroke-width="2"/>
+      <text x="580" y="105" text-anchor="middle" fill="#60a5fa" font-weight="700">1993</text>
+      <text x="580" y="92"  text-anchor="middle" fill="#ccc">LDAP / X.500</text>
+      <text x="580" y="160" text-anchor="middle" fill="#888">directory as a service</text>
+
+      <line x1="720" y1="115" x2="720" y2="125" stroke="#a78bfa" stroke-width="2"/>
+      <text x="720" y="105" text-anchor="middle" fill="#a78bfa" font-weight="700">1994</text>
+      <text x="720" y="92"  text-anchor="middle" fill="#ccc">SSL 2.0 (Netscape)</text>
+      <text x="720" y="160" text-anchor="middle" fill="#888">credentials over public web</text>
+
+      <line x1="850" y1="115" x2="850" y2="125" stroke="#f87171" stroke-width="2"/>
+      <text x="850" y="105" text-anchor="middle" fill="#f87171" font-weight="700">1995</text>
+      <text x="850" y="92"  text-anchor="middle" fill="#ccc">Win NT / DC</text>
+      <text x="850" y="160" text-anchor="middle" fill="#888">enterprise SSO arrives</text>
+    </g>
+  </svg>
+
+  <div class="cols cols-3" style="margin-top:0.4em;">
+    <div class="card blue">
+      <h3 class="b">What was solved</h3>
+      <p>"Tell users on this <em>system</em> apart" → "tell users on this <em>network</em> apart" via tickets and shared secrets.</p>
+    </div>
+    <div class="card amber">
+      <h3 class="a">What hadn't been</h3>
+      <p>Identity across organisations. Each company was its own island; trust did not cross boundaries.</p>
+    </div>
+    <div class="card green">
+      <h3 class="g">Primitives still in use</h3>
+      <p>Password hash, ticket, directory entry, CA-issued certificate, the <em>principal</em> as a first-class object.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 06 — HISTORY II ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">05</span>
+    <h2>A Brief History II — The Web &amp; Federation Era (1995-2014)</h2>
+  </div>
+  <p>The web made every company a service for every user on Earth. Federation — "<em>I trust your IdP to vouch for who this is</em>" — became the dominant model. SAML solved enterprise SSO; OAuth solved the password-sharing problem; OpenID Connect bolted identity back onto OAuth.</p>
+
+  <svg class="diagram" viewBox="0 0 940 240" width="920" height="240">
+    <line x1="40" y1="120" x2="900" y2="120" stroke="#2a2a3a" stroke-width="2"/>
+    <line x1="40" y1="115" x2="40" y2="125" stroke="#888" stroke-width="2"/>
+    <line x1="900" y1="115" x2="900" y2="125" stroke="#888" stroke-width="2"/>
+    <text x="40" y="145" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">1995</text>
+    <text x="900" y="145" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">2014</text>
+
+    <g font-family="JetBrains Mono,monospace" font-size="10">
+      <line x1="100" y1="115" x2="100" y2="125" stroke="#60a5fa" stroke-width="2"/>
+      <text x="100" y="105" text-anchor="middle" fill="#60a5fa" font-weight="700">2002</text>
+      <text x="100" y="92"  text-anchor="middle" fill="#ccc">SAML 1.0</text>
+      <text x="100" y="160" text-anchor="middle" fill="#888">XML federation</text>
+
+      <line x1="220" y1="115" x2="220" y2="125" stroke="#4ecb8d" stroke-width="2"/>
+      <text x="220" y="105" text-anchor="middle" fill="#4ecb8d" font-weight="700">2005</text>
+      <text x="220" y="92"  text-anchor="middle" fill="#ccc">SAML 2.0</text>
+      <text x="220" y="160" text-anchor="middle" fill="#888">enterprise SSO standard</text>
+
+      <line x1="340" y1="115" x2="340" y2="125" stroke="#f5a623" stroke-width="2"/>
+      <text x="340" y="105" text-anchor="middle" fill="#f5a623" font-weight="700">2007</text>
+      <text x="340" y="92"  text-anchor="middle" fill="#ccc">OAuth 1.0</text>
+      <text x="340" y="160" text-anchor="middle" fill="#888">stop sharing passwords</text>
+
+      <line x1="460" y1="115" x2="460" y2="125" stroke="#a78bfa" stroke-width="2"/>
+      <text x="460" y="105" text-anchor="middle" fill="#a78bfa" font-weight="700">2010</text>
+      <text x="460" y="92"  text-anchor="middle" fill="#ccc">JWT (Internet-Draft)</text>
+      <text x="460" y="160" text-anchor="middle" fill="#888">signed JSON tokens</text>
+
+      <line x1="580" y1="115" x2="580" y2="125" stroke="#f5a623" stroke-width="2"/>
+      <text x="580" y="105" text-anchor="middle" fill="#f5a623" font-weight="700">2012</text>
+      <text x="580" y="92"  text-anchor="middle" fill="#ccc">OAuth 2.0 (RFC 6749)</text>
+      <text x="580" y="160" text-anchor="middle" fill="#888">bearer tokens, grant types</text>
+
+      <line x1="700" y1="115" x2="700" y2="125" stroke="#4ecb8d" stroke-width="2"/>
+      <text x="700" y="105" text-anchor="middle" fill="#4ecb8d" font-weight="700">2013</text>
+      <text x="700" y="92"  text-anchor="middle" fill="#ccc">SCIM 2.0</text>
+      <text x="700" y="160" text-anchor="middle" fill="#888">cross-org user provisioning</text>
+
+      <line x1="820" y1="115" x2="820" y2="125" stroke="#60a5fa" stroke-width="2"/>
+      <text x="820" y="105" text-anchor="middle" fill="#60a5fa" font-weight="700">2014</text>
+      <text x="820" y="92"  text-anchor="middle" fill="#ccc">OIDC Core 1.0</text>
+      <text x="820" y="160" text-anchor="middle" fill="#888">"Sign in with Google"</text>
+    </g>
+  </svg>
+
+  <div class="cols cols-3" style="margin-top:0.4em;">
+    <div class="card blue">
+      <h3 class="b">What was solved</h3>
+      <p>Identity <em>across organisations</em>. Users sign in once at their IdP and reach hundreds of relying parties.</p>
+    </div>
+    <div class="card amber">
+      <h3 class="a">What hadn't been</h3>
+      <p>Phishing-resistant credentials, mobile-first flows, machine-to-machine identity, anti-replay token binding.</p>
+    </div>
+    <div class="card green">
+      <h3 class="g">Primitives still in use</h3>
+      <p>SAML assertion, JWT, OAuth grant types, scopes, the IdP / RP / Resource-Server triad, SCIM as the provisioning standard.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 07 — HISTORY III ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">06</span>
+    <h2>A Brief History III — Mobile, Cloud &amp; Zero Trust (2014-2023)</h2>
+  </div>
+  <p>Phishing went industrial; the perimeter dissolved; workloads multiplied a hundred-fold under Kubernetes. The era's signature is <em>"trust nothing — verify the credential, the device, the workload, every time"</em>. FIDO2/passkeys finally beat phishing; SPIFFE solved workload identity; OPA gave authorisation a programmable language.</p>
+
+  <svg class="diagram" viewBox="0 0 940 240" width="920" height="240">
+    <line x1="40" y1="120" x2="900" y2="120" stroke="#2a2a3a" stroke-width="2"/>
+    <line x1="40" y1="115" x2="40" y2="125" stroke="#888" stroke-width="2"/>
+    <line x1="900" y1="115" x2="900" y2="125" stroke="#888" stroke-width="2"/>
+    <text x="40" y="145" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">2014</text>
+    <text x="900" y="145" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">2023</text>
+
+    <g font-family="JetBrains Mono,monospace" font-size="10">
+      <line x1="100" y1="115" x2="100" y2="125" stroke="#a78bfa" stroke-width="2"/>
+      <text x="100" y="105" text-anchor="middle" fill="#a78bfa" font-weight="700">2014</text>
+      <text x="100" y="92"  text-anchor="middle" fill="#ccc">FIDO U2F · BeyondCorp</text>
+      <text x="100" y="160" text-anchor="middle" fill="#888">phishing-resistant · "Zero Trust"</text>
+
+      <line x1="220" y1="115" x2="220" y2="125" stroke="#f5a623" stroke-width="2"/>
+      <text x="220" y="105" text-anchor="middle" fill="#f5a623" font-weight="700">2015</text>
+      <text x="220" y="92"  text-anchor="middle" fill="#ccc">PKCE (RFC 7636)</text>
+      <text x="220" y="160" text-anchor="middle" fill="#888">OAuth for mobile/SPAs</text>
+
+      <line x1="340" y1="115" x2="340" y2="125" stroke="#4ecb8d" stroke-width="2"/>
+      <text x="340" y="105" text-anchor="middle" fill="#4ecb8d" font-weight="700">2018</text>
+      <text x="340" y="92"  text-anchor="middle" fill="#ccc">SPIFFE/SPIRE · OPA</text>
+      <text x="340" y="160" text-anchor="middle" fill="#888">workload identity · Policy-as-Code</text>
+
+      <line x1="460" y1="115" x2="460" y2="125" stroke="#60a5fa" stroke-width="2"/>
+      <text x="460" y="105" text-anchor="middle" fill="#60a5fa" font-weight="700">2019</text>
+      <text x="460" y="92"  text-anchor="middle" fill="#ccc">WebAuthn L1 · NIST 800-207</text>
+      <text x="460" y="160" text-anchor="middle" fill="#888">passkey foundation · ZT architecture</text>
+
+      <line x1="580" y1="115" x2="580" y2="125" stroke="#f87171" stroke-width="2"/>
+      <text x="580" y="105" text-anchor="middle" fill="#f87171" font-weight="700">2021</text>
+      <text x="580" y="92"  text-anchor="middle" fill="#ccc">Zanzibar paper · OpenFGA</text>
+      <text x="580" y="160" text-anchor="middle" fill="#888">ReBAC at planet scale</text>
+
+      <line x1="700" y1="115" x2="700" y2="125" stroke="#a78bfa" stroke-width="2"/>
+      <text x="700" y="105" text-anchor="middle" fill="#a78bfa" font-weight="700">2022</text>
+      <text x="700" y="92"  text-anchor="middle" fill="#ccc">Passkeys (sync)</text>
+      <text x="700" y="160" text-anchor="middle" fill="#888">Apple/Google/MS commit</text>
+
+      <line x1="820" y1="115" x2="820" y2="125" stroke="#f5a623" stroke-width="2"/>
+      <text x="820" y="105" text-anchor="middle" fill="#f5a623" font-weight="700">2023</text>
+      <text x="820" y="92"  text-anchor="middle" fill="#ccc">DPoP · Cedar · OAuth 2.1</text>
+      <text x="820" y="160" text-anchor="middle" fill="#888">sender-bound tokens · ABAC</text>
+    </g>
+  </svg>
+
+  <div class="cols cols-3" style="margin-top:0.4em;">
+    <div class="card blue">
+      <h3 class="b">What was solved</h3>
+      <p>Phishing (passkeys), workload-to-workload identity (SPIFFE), policy as code (OPA / Rego), mobile-safe OAuth (PKCE).</p>
+    </div>
+    <div class="card amber">
+      <h3 class="a">What hadn't been</h3>
+      <p>User-controlled identity (your wallet, not the IdP's database). AI agents acting on your behalf. Cross-border, cross-trust-domain federation at country scale.</p>
+    </div>
+    <div class="card green">
+      <h3 class="g">Primitives still in use</h3>
+      <p>WebAuthn credential, X.509 SVID, OPA bundle, Cedar policy, the policy-decision-point pattern, mTLS-everywhere east-west.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 08 — HISTORY IV ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">07</span>
+    <h2>A Brief History IV — The Agent &amp; Wallet Era (2024-now)</h2>
+  </div>
+  <p>Two simultaneous shifts. <span class="g">Wallets:</span> the EU mandates that every citizen has a state-issued digital identity wallet by 2026 — identity moves from "row in an IdP database" to "a credential I hold and present". <span class="a">Agents:</span> AI systems become first-class principals — they hold tokens, call APIs on the user's behalf, and need their own audit trail. The MCP authorisation profile is the early canonical answer.</p>
+
+  <svg class="diagram" viewBox="0 0 940 240" width="920" height="240">
+    <line x1="40" y1="120" x2="900" y2="120" stroke="#2a2a3a" stroke-width="2"/>
+    <line x1="40" y1="115" x2="40" y2="125" stroke="#888" stroke-width="2"/>
+    <line x1="900" y1="115" x2="900" y2="125" stroke="#888" stroke-width="2"/>
+    <text x="40" y="145" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">2024</text>
+    <text x="900" y="145" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="10">2026</text>
+
+    <g font-family="JetBrains Mono,monospace" font-size="10">
+      <line x1="110" y1="115" x2="110" y2="125" stroke="#a78bfa" stroke-width="2"/>
+      <text x="110" y="105" text-anchor="middle" fill="#a78bfa" font-weight="700">2024-05</text>
+      <text x="110" y="92"  text-anchor="middle" fill="#ccc">eIDAS 2.0 enacted</text>
+      <text x="110" y="160" text-anchor="middle" fill="#888">EUDI Wallet mandated</text>
+
+      <line x1="240" y1="115" x2="240" y2="125" stroke="#4ecb8d" stroke-width="2"/>
+      <text x="240" y="105" text-anchor="middle" fill="#4ecb8d" font-weight="700">2024-09</text>
+      <text x="240" y="92"  text-anchor="middle" fill="#ccc">OpenID Federation 1.0</text>
+      <text x="240" y="160" text-anchor="middle" fill="#888">trust chains for SIOPv2</text>
+
+      <line x1="370" y1="115" x2="370" y2="125" stroke="#f5a623" stroke-width="2"/>
+      <text x="370" y="105" text-anchor="middle" fill="#f5a623" font-weight="700">2024-11</text>
+      <text x="370" y="92"  text-anchor="middle" fill="#ccc">MCP launched</text>
+      <text x="370" y="160" text-anchor="middle" fill="#888">agents need authorisation</text>
+
+      <line x1="500" y1="115" x2="500" y2="125" stroke="#60a5fa" stroke-width="2"/>
+      <text x="500" y="105" text-anchor="middle" fill="#60a5fa" font-weight="700">2025-06</text>
+      <text x="500" y="92"  text-anchor="middle" fill="#ccc">MCP authz profile</text>
+      <text x="500" y="160" text-anchor="middle" fill="#888">OAuth + Resource Indicators</text>
+
+      <line x1="630" y1="115" x2="630" y2="125" stroke="#f87171" stroke-width="2"/>
+      <text x="630" y="105" text-anchor="middle" fill="#f87171" font-weight="700">2025-Q4</text>
+      <text x="630" y="92"  text-anchor="middle" fill="#ccc">FAPI 2.0 final</text>
+      <text x="630" y="160" text-anchor="middle" fill="#888">finance-grade OIDC baseline</text>
+
+      <line x1="760" y1="115" x2="760" y2="125" stroke="#a78bfa" stroke-width="2"/>
+      <text x="760" y="105" text-anchor="middle" fill="#a78bfa" font-weight="700">2026-08</text>
+      <text x="760" y="92"  text-anchor="middle" fill="#ccc">EU AI Act enforced</text>
+      <text x="760" y="160" text-anchor="middle" fill="#888">agent identity &amp; audit</text>
+
+      <line x1="870" y1="115" x2="870" y2="125" stroke="#4ecb8d" stroke-width="2"/>
+      <text x="870" y="105" text-anchor="middle" fill="#4ecb8d" font-weight="700">2026-Q4</text>
+      <text x="870" y="92"  text-anchor="middle" fill="#ccc">EUDI Wallet live</text>
+      <text x="870" y="160" text-anchor="middle" fill="#888">all 27 member states</text>
+    </g>
+  </svg>
+
+  <div class="cols cols-3" style="margin-top:0.4em;">
+    <div class="card blue">
+      <h3 class="b">What's being solved</h3>
+      <p>Citizen-controlled identity. Selective disclosure (prove you're over 18 without revealing your date of birth). Agent delegation with a paper trail.</p>
+    </div>
+    <div class="card amber">
+      <h3 class="a">What's still open</h3>
+      <p>Cross-jurisdiction wallet trust, agent <em>liability</em> models, agent-to-agent delegation, the regulator's audit grammar for AI systems.</p>
+    </div>
+    <div class="card green">
+      <h3 class="g">New primitives</h3>
+      <p>Verifiable Credential, mDoc, SIOPv2 wallet, OpenID4VCI/VP, agent-as-principal, MCP-resource <em>audience</em>, signed agent action logs.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 09 — THREATS ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">08</span>
+    <h2>The Threat Landscape — What All These Specs Defend Against</h2>
+  </div>
+  <p>Every protocol decision in the field — DPoP, audience binding, PKCE, FAPI, mTLS east-west, SPIFFE federation — answers a specific attack class. If you understand <em>which attacks shape which mitigations</em>, the protocol zoo collapses into a small number of obvious moves.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:22%;">Threat</th>
+        <th style="width:30%;">What it means in practice</th>
+        <th style="width:28%;">Defence(s)</th>
+        <th style="width:20%;">Where it's covered</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="r">Phishing</span></td>
+        <td>User typed a real password into a fake login page</td>
+        <td>WebAuthn / passkeys (origin-bound)</td>
+        <td>Authentication Methods</td>
+      </tr>
+      <tr>
+        <td><span class="r">Credential stuffing</span></td>
+        <td>Leaked password + bot tries it on every site</td>
+        <td>Argon2id, breach lookups (HIBP), rate limit, MFA</td>
+        <td>Authentication Methods</td>
+      </tr>
+      <tr>
+        <td><span class="r">Token theft &amp; replay</span></td>
+        <td>Bearer JWT exfiltrated → attacker uses it</td>
+        <td>DPoP, mTLS-bound tokens, short TTL, refresh rotation</td>
+        <td>Adv. OIDC · Edge AuthZ</td>
+      </tr>
+      <tr>
+        <td><span class="r">Confused deputy</span></td>
+        <td>Token meant for service A used at service B</td>
+        <td>Resource Indicators (RFC 8707), audience claim, Token Exchange downscope</td>
+        <td>OAuth · OIDC · Edge AuthZ</td>
+      </tr>
+      <tr>
+        <td><span class="r">Lateral movement</span></td>
+        <td>Attacker pivots across services after first compromise</td>
+        <td>SPIFFE workload identity, mTLS east-west, ABAC at every hop</td>
+        <td>Workload Identity AuthZ</td>
+      </tr>
+      <tr>
+        <td><span class="r">Privilege escalation</span></td>
+        <td>Authenticated user does what they shouldn't</td>
+        <td>Least privilege, RBAC → ABAC → ReBAC, PDP central, audit</td>
+        <td>Authorization Models</td>
+      </tr>
+      <tr>
+        <td><span class="r">SAML XSW / alg confusion</span></td>
+        <td>Forged assertion / "alg":"none" JWT accepted</td>
+        <td>Strict signature validation, pinned algorithms, FAPI baseline</td>
+        <td>SAML &amp; SCIM · Adv. OIDC</td>
+      </tr>
+      <tr>
+        <td><span class="r">Session hijack via subdomain XSS</span></td>
+        <td>Cookie / token leaked from a less-secure subdomain</td>
+        <td>HttpOnly, SameSite, scope cookies tightly, CSP, separate origins</td>
+        <td>Authentication Methods</td>
+      </tr>
+      <tr>
+        <td><span class="r">Supply-chain compromise</span></td>
+        <td>Attacker patches your dependency / image / IaC</td>
+        <td>Sigstore, SLSA, signed SBOMs, provenance attestation</td>
+        <td>Cloud Security · Workload Identity</td>
+      </tr>
+      <tr>
+        <td><span class="r">Agent prompt injection</span></td>
+        <td>Hostile data steers an LLM agent to misuse a tool token</td>
+        <td>Per-tool scoped tokens, resource audience, human-in-the-loop confirms, CAEP signals</td>
+        <td>OAuth for MCP · Edge AuthZ</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 10 — STANDARDS LANDSCAPE ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">09</span>
+    <h2>The Standards Landscape — Who Owns What</h2>
+  </div>
+  <p>Identity is unusual among engineering domains in having <em>many</em> standards bodies, each owning a slice. Knowing which body owns which spec tells you where the vocabulary, the disputes, and the next revisions live.</p>
+
+  <div class="cols cols-2">
+    <div>
+      <table>
+        <thead><tr><th>Body</th><th>Owns</th></tr></thead>
+        <tbody>
+          <tr><td><span class="a">IETF</span></td><td>OAuth 2.0/2.1, JWT (7519), DPoP (9449), Token Exchange (8693), PKCE (7636), PAR (9126), JAR (9101), Resource Indicators (8707), JWS / JWE</td></tr>
+          <tr><td><span class="a">OIDF</span></td><td>OpenID Connect Core, FAPI 1/2, Federation 1.0, SIOPv2, OpenID4VCI, OpenID4VP, SSF / CAEP, MODRNA, RISC</td></tr>
+          <tr><td><span class="a">OASIS</span></td><td>SAML 2.0, XACML, WS-Security, WS-Federation</td></tr>
+          <tr><td><span class="a">W3C</span></td><td>WebAuthn (L3), Verifiable Credentials (VC 2.0), DIDs, CredentialManagement</td></tr>
+          <tr><td><span class="a">FIDO Alliance</span></td><td>U2F, FIDO2 / CTAP, MDS (metadata service), passkey UX guidance</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <table>
+        <thead><tr><th>Body</th><th>Owns</th></tr></thead>
+        <tbody>
+          <tr><td><span class="g">ISO/IEC</span></td><td>ISO 18013-5/-7 (mDL), ISO/IEC 23220 (mobile eID), ISO 29115 (assurance)</td></tr>
+          <tr><td><span class="g">NIST</span></td><td>SP 800-63 (Digital Identity, IAL/AAL/FAL), SP 800-207 (Zero Trust), FIPS 201 (PIV)</td></tr>
+          <tr><td><span class="g">CNCF</span></td><td>SPIFFE/SPIRE, OPA / Rego, OpenFGA, Cilium, Falco</td></tr>
+          <tr><td><span class="g">EU bodies</span></td><td>eIDAS 2.0 (regulation), EUDI Wallet ARF (architecture &amp; reference framework), GDPR / DORA</td></tr>
+          <tr><td><span class="g">Vendor / cloud</span></td><td>AWS IAM &amp; Cedar, Google IAM &amp; Zanzibar, Microsoft Entra, Apple/Google passkey ecosystems, Anthropic MCP authz profile</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card purple" style="margin-top:0.4em;">
+    <h3 class="p">Reading the body tells you the politics</h3>
+    <p>IETF specs are tight, narrow, often grumpy and security-driven. OIDF specs are <em>profiles</em> — they say "use these RFCs together, with these constraints". OASIS is enterprise / XML legacy. W3C and FIDO own the <em>browser</em> contract. NIST and ISO own the <em>regulator's</em> contract. Cloud vendors and CNCF projects move fastest but break compatibility.</p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 11 — AUTHN MAP ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">10</span>
+    <h2>The AuthN Conceptual Map</h2>
+  </div>
+
+  <svg class="diagram" viewBox="0 0 940 360" width="920" height="360">
+    <!-- factors -->
+    <rect x="20" y="20" width="280" height="100" rx="8" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="160" y="42" text-anchor="middle" fill="#60a5fa" font-family="Playfair Display,serif" font-size="13" font-weight="700">Factors</text>
+    <text x="35" y="62" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">knowledge → password, PIN, recovery</text>
+    <text x="35" y="78" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">possession → TOTP, push, passkey, smartcard</text>
+    <text x="35" y="94" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">inherence → fingerprint, face, voice</text>
+    <text x="35" y="112" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">↳ NIST AAL1 / AAL2 / AAL3</text>
+
+    <!-- methods -->
+    <rect x="320" y="20" width="280" height="100" rx="8" fill="#1a2a1a" stroke="#4ecb8d" stroke-width="1.5"/>
+    <text x="460" y="42" text-anchor="middle" fill="#4ecb8d" font-family="Playfair Display,serif" font-size="13" font-weight="700">Methods (modern)</text>
+    <text x="335" y="62" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">password + Argon2id + breach check</text>
+    <text x="335" y="78" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">TOTP / push (RFC 6238 / OOB)</text>
+    <text x="335" y="94" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">WebAuthn / FIDO2 / Passkey</text>
+    <text x="335" y="112" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">↳ origin-bound, phishing-proof</text>
+
+    <!-- federation -->
+    <rect x="620" y="20" width="280" height="100" rx="8" fill="#2a1a2a" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="760" y="42" text-anchor="middle" fill="#a78bfa" font-family="Playfair Display,serif" font-size="13" font-weight="700">Federation protocols</text>
+    <text x="635" y="62" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">SAML 2.0 (enterprise legacy)</text>
+    <text x="635" y="78" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">OIDC + JWT (modern web/mobile)</text>
+    <text x="635" y="94" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">SCIM 2.0 (provisioning)</text>
+    <text x="635" y="112" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">↳ OpenID Federation 1.0 (Sep 2024)</text>
+
+    <!-- workload -->
+    <rect x="20" y="150" width="430" height="100" rx="8" fill="#2a1a1a" stroke="#f5a623" stroke-width="1.5"/>
+    <text x="235" y="172" text-anchor="middle" fill="#f5a623" font-family="Playfair Display,serif" font-size="13" font-weight="700">Workload identity</text>
+    <text x="35" y="192" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">SPIFFE / SPIRE → SVIDs (X.509 or JWT)</text>
+    <text x="35" y="208" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">IRSA (AWS) · GCP WI · Azure WI · WIF</text>
+    <text x="35" y="224" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">K8s ServiceAccountTokenVolumeProjection</text>
+    <text x="35" y="240" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">↳ no passwords for machines · attest, then trust</text>
+
+    <!-- wallet -->
+    <rect x="470" y="150" width="430" height="100" rx="8" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1.5"/>
+    <text x="685" y="172" text-anchor="middle" fill="#60a5fa" font-family="Playfair Display,serif" font-size="13" font-weight="700">User-held credentials (wallet era)</text>
+    <text x="485" y="192" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">SIOPv2 — wallet as the IdP</text>
+    <text x="485" y="208" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">OpenID4VCI / OpenID4VP — issue + present</text>
+    <text x="485" y="224" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">ISO mDL · Verifiable Credentials</text>
+    <text x="485" y="240" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">↳ selective disclosure, no IdP phone-home</text>
+
+    <!-- arrows from factors to methods to federation -->
+    <line x1="300" y1="70" x2="320" y2="70" stroke="#888" stroke-width="1.5" marker-end="url(#a11)"/>
+    <line x1="600" y1="70" x2="620" y2="70" stroke="#888" stroke-width="1.5" marker-end="url(#a11)"/>
+
+    <text x="470" y="285" text-anchor="middle" fill="#888" font-family="DM Sans,sans-serif" font-size="11" font-style="italic">Each row covered in detail by a deck:</text>
+    <text x="470" y="305" text-anchor="middle" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="10">Authentication Methods · OAuth (Primer / Intro / MCP) · OIDC (Intro / Adv) · SAML &amp; SCIM · Workload Identity AuthZ</text>
+
+    <defs>
+      <marker id="a11" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7" fill="#888"/></marker>
+    </defs>
+  </svg>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 12 — AUTHZ MAP ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">11</span>
+    <h2>The AuthZ Conceptual Map</h2>
+  </div>
+
+  <svg class="diagram" viewBox="0 0 940 360" width="920" height="360">
+    <!-- model arc -->
+    <text x="20" y="40" fill="#f5a623" font-family="Playfair Display,serif" font-size="14" font-weight="700">Models — the arc</text>
+    <g font-family="JetBrains Mono,monospace" font-size="11">
+      <rect x="20"  y="55" width="100" height="50" rx="6" fill="#1a1a2a" stroke="#888" stroke-width="1.5"/>
+      <text x="70"  y="78" text-anchor="middle" fill="#ccc" font-weight="700">DAC</text>
+      <text x="70"  y="94" text-anchor="middle" fill="#888" font-size="9">owner sets ACL</text>
+
+      <rect x="140" y="55" width="100" height="50" rx="6" fill="#1a1a2a" stroke="#888" stroke-width="1.5"/>
+      <text x="190" y="78" text-anchor="middle" fill="#ccc" font-weight="700">MAC</text>
+      <text x="190" y="94" text-anchor="middle" fill="#888" font-size="9">labels + clearances</text>
+
+      <rect x="260" y="55" width="100" height="50" rx="6" fill="#1a2a1a" stroke="#4ecb8d" stroke-width="1.5"/>
+      <text x="310" y="78" text-anchor="middle" fill="#4ecb8d" font-weight="700">RBAC</text>
+      <text x="310" y="94" text-anchor="middle" fill="#888" font-size="9">roles → permissions</text>
+
+      <rect x="380" y="55" width="100" height="50" rx="6" fill="#2a2a1a" stroke="#f5a623" stroke-width="1.5"/>
+      <text x="430" y="78" text-anchor="middle" fill="#f5a623" font-weight="700">ABAC</text>
+      <text x="430" y="94" text-anchor="middle" fill="#888" font-size="9">attrs + context</text>
+
+      <rect x="500" y="55" width="100" height="50" rx="6" fill="#2a1a2a" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="550" y="78" text-anchor="middle" fill="#a78bfa" font-weight="700">ReBAC</text>
+      <text x="550" y="94" text-anchor="middle" fill="#888" font-size="9">relationship tuples</text>
+
+      <line x1="120" y1="80" x2="140" y2="80" stroke="#888" marker-end="url(#a12)"/>
+      <line x1="240" y1="80" x2="260" y2="80" stroke="#888" marker-end="url(#a12)"/>
+      <line x1="360" y1="80" x2="380" y2="80" stroke="#888" marker-end="url(#a12)"/>
+      <line x1="480" y1="80" x2="500" y2="80" stroke="#888" marker-end="url(#a12)"/>
+    </g>
+
+    <text x="620" y="80" fill="#888" font-family="DM Sans,sans-serif" font-size="11" font-style="italic">→ each step adds context the previous couldn't express</text>
+
+    <!-- engines -->
+    <text x="20" y="145" fill="#f5a623" font-family="Playfair Display,serif" font-size="14" font-weight="700">Engines — Policy-as-Code</text>
+    <g font-family="JetBrains Mono,monospace" font-size="10">
+      <rect x="20" y="160" width="170" height="55" rx="6" fill="#1a2a1a" stroke="#4ecb8d" stroke-width="1.5"/>
+      <text x="105" y="180" text-anchor="middle" fill="#4ecb8d" font-weight="700">OPA / Rego</text>
+      <text x="105" y="198" text-anchor="middle" fill="#888">general PDP, sidecar / library</text>
+
+      <rect x="210" y="160" width="170" height="55" rx="6" fill="#2a2a1a" stroke="#f5a623" stroke-width="1.5"/>
+      <text x="295" y="180" text-anchor="middle" fill="#f5a623" font-weight="700">Cedar (AWS)</text>
+      <text x="295" y="198" text-anchor="middle" fill="#888">analyzable, ABAC + RBAC</text>
+
+      <rect x="400" y="160" width="170" height="55" rx="6" fill="#2a1a2a" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="485" y="180" text-anchor="middle" fill="#a78bfa" font-weight="700">OpenFGA / SpiceDB</text>
+      <text x="485" y="198" text-anchor="middle" fill="#888">Zanzibar-style ReBAC</text>
+
+      <rect x="590" y="160" width="170" height="55" rx="6" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1.5"/>
+      <text x="675" y="180" text-anchor="middle" fill="#60a5fa" font-weight="700">Cloud IAM evaluators</text>
+      <text x="675" y="198" text-anchor="middle" fill="#888">AWS/GCP/Azure proprietary</text>
+
+      <rect x="780" y="160" width="120" height="55" rx="6" fill="#2a1a1a" stroke="#f87171" stroke-width="1.5"/>
+      <text x="840" y="180" text-anchor="middle" fill="#f87171" font-weight="700">Casbin</text>
+      <text x="840" y="198" text-anchor="middle" fill="#888">embedded library</text>
+    </g>
+
+    <!-- topologies -->
+    <text x="20" y="248" fill="#f5a623" font-family="Playfair Display,serif" font-size="14" font-weight="700">Topologies — where the decision runs</text>
+    <g font-family="JetBrains Mono,monospace" font-size="10">
+      <rect x="20"  y="263" width="200" height="55" rx="6" fill="#1a1a2a" stroke="#60a5fa" stroke-width="1.5"/>
+      <text x="120" y="283" text-anchor="middle" fill="#60a5fa" font-weight="700">North-South — at the edge</text>
+      <text x="120" y="301" text-anchor="middle" fill="#888">API GW, Envoy ext_authz, Cloudflare Access</text>
+
+      <rect x="240" y="263" width="200" height="55" rx="6" fill="#1a2a1a" stroke="#4ecb8d" stroke-width="1.5"/>
+      <text x="340" y="283" text-anchor="middle" fill="#4ecb8d" font-weight="700">East-West — in the mesh</text>
+      <text x="340" y="301" text-anchor="middle" fill="#888">Istio AuthorizationPolicy, Linkerd, Cilium</text>
+
+      <rect x="460" y="263" width="200" height="55" rx="6" fill="#2a2a1a" stroke="#f5a623" stroke-width="1.5"/>
+      <text x="560" y="283" text-anchor="middle" fill="#f5a623" font-weight="700">In-app — in business code</text>
+      <text x="560" y="301" text-anchor="middle" fill="#888">domain-aware checks, OPA library</text>
+
+      <rect x="680" y="263" width="220" height="55" rx="6" fill="#2a1a2a" stroke="#a78bfa" stroke-width="1.5"/>
+      <text x="790" y="283" text-anchor="middle" fill="#a78bfa" font-weight="700">In the data — RLS / row-level</text>
+      <text x="790" y="301" text-anchor="middle" fill="#888">Postgres RLS, Snowflake row-access policies</text>
+    </g>
+
+    <text x="470" y="345" text-anchor="middle" fill="#888" font-family="DM Sans,sans-serif" font-size="11" font-style="italic">Decks: Authorization Models · Workload Identity AuthZ · Edge &amp; Gateway AuthZ</text>
+
+    <defs>
+      <marker id="a12" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#888"/></marker>
+    </defs>
+  </svg>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 13 — N-S vs E-W ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">12</span>
+    <h2>North-South vs East-West — The Two Axes</h2>
+  </div>
+  <p>Once a request enters your system, every authorisation decision falls into one of two camps. They have different threat models, different latency budgets, different identity carriers, and almost always different teams owning them. Confusing the two is a top-three cause of edge bugs.</p>
+
+  <svg class="diagram" viewBox="0 0 940 280" width="920" height="280">
+    <!-- world -->
+    <text x="40" y="50" fill="#888" font-family="JetBrains Mono,monospace" font-size="11">internet (untrusted)</text>
+    <line x1="40" y1="60" x2="200" y2="60" stroke="#888" stroke-dasharray="3,3"/>
+    <text x="120" y="105" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono,monospace" font-size="11">user / agent</text>
+    <text x="120" y="120" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono,monospace" font-size="11">+ JWT / cookie</text>
+
+    <!-- north-south arrow into the edge -->
+    <line x1="200" y1="120" x2="320" y2="120" stroke="#f5a623" stroke-width="2" marker-end="url(#a13a)"/>
+    <text x="260" y="105" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono,monospace" font-size="11" font-weight="700">North-South</text>
+    <text x="260" y="138" text-anchor="middle" fill="#888" font-family="JetBrains Mono,monospace" font-size="9">Edge / API GW / Ingress</text>
+
+    <!-- edge box -->
+    <rect x="320" y="80" width="140" height="100" rx="8" fill="#2a1a1a" stroke="#f5a623" stroke-width="1.5"/>
+    <text x="390" y="105" text-anchor="middle" fill="#f5a623" font-family="Playfair Display,serif" font-size="13" font-weight="700">The Edge</text>
+    <text x="390" y="125" text-anchor="middle" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="9">validate JWT</text>
+    <text x="390" y="140" text-anchor="middle" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="9">downscope token</text>
+    <text x="390" y="155" text-anchor="middle" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="9">terminate mTLS</text>
+    <text x="390" y="170" text-anchor="middle" fill="#ccc" font-family="JetBrains Mono,monospace" font-size="9">propagate identity</text>
+
+    <!-- cluster (mesh) -->
+    <rect x="500" y="40" width="400" height="200" rx="10" fill="none" stroke="#4ecb8d" stroke-dasharray="4,3" stroke-width="1.5"/>
+    <text x="700" y="60" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="11">trust domain (mesh) · spiffe://prod/</text>
+
+    <!-- services -->
+    <rect x="520" y="80"  width="100" height="50" rx="6" fill="#1a2a1a" stroke="#4ecb8d" stroke-width="1.5"/>
+    <text x="570" y="105" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="11" font-weight="700">api</text>
+    <text x="570" y="120" text-anchor="middle" fill="#888"   font-family="JetBrains Mono,monospace" font-size="9">SVID</text>
+
+    <rect x="660" y="80"  width="100" height="50" rx="6" fill="#1a2a1a" stroke="#4ecb8d" stroke-width="1.5"/>
+    <text x="710" y="105" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="11" font-weight="700">orders</text>
+    <text x="710" y="120" text-anchor="middle" fill="#888"   font-family="JetBrains Mono,monospace" font-size="9">SVID</text>
+
+    <rect x="800" y="80"  width="100" height="50" rx="6" fill="#1a2a1a" stroke="#4ecb8d" stroke-width="1.5"/>
+    <text x="850" y="105" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="11" font-weight="700">db</text>
+    <text x="850" y="120" text-anchor="middle" fill="#888"   font-family="JetBrains Mono,monospace" font-size="9">SVID</text>
+
+    <line x1="460" y1="130" x2="520" y2="105" stroke="#f5a623" stroke-width="1.5" marker-end="url(#a13a)"/>
+    <line x1="620" y1="105" x2="660" y2="105" stroke="#4ecb8d" stroke-width="2" marker-end="url(#a13g)"/>
+    <line x1="760" y1="105" x2="800" y2="105" stroke="#4ecb8d" stroke-width="2" marker-end="url(#a13g)"/>
+
+    <text x="700" y="160" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono,monospace" font-size="11" font-weight="700">East-West</text>
+    <text x="700" y="180" text-anchor="middle" fill="#888"   font-family="JetBrains Mono,monospace" font-size="9">mTLS · SVID · Istio AuthorizationPolicy</text>
+
+    <defs>
+      <marker id="a13a" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7" fill="#f5a623"/></marker>
+      <marker id="a13g" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7" fill="#4ecb8d"/></marker>
+    </defs>
+  </svg>
+
+  <div class="cols cols-2" style="margin-top:0.4em;">
+    <div class="card amber">
+      <h3 class="a">North-South — at the edge</h3>
+      <ul>
+        <li>Identity carrier: JWT / cookie / OAuth bearer / mTLS client cert</li>
+        <li>Threats: phishing, token theft, replay, confused deputy, scraping</li>
+        <li>Latency: ~5-30 ms acceptable; can call out to introspection</li>
+        <li>Decks: <em>Edge &amp; Gateway AuthZ</em>, <em>OAuth for MCP</em></li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3 class="g">East-West — inside the mesh</h3>
+      <ul>
+        <li>Identity carrier: SPIFFE SVID (X.509 or JWT), mesh mTLS</li>
+        <li>Threats: lateral movement, supply-chain compromise, blast-radius</li>
+        <li>Latency: sub-millisecond; decisions must be local (sidecar)</li>
+        <li>Decks: <em>Workload Identity &amp; Service-Mesh AuthZ</em></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 14 — BUILD VS BUY ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">13</span>
+    <h2>Build vs Buy — The Provider Landscape</h2>
+  </div>
+  <p>Three options when you need identity for a product. The right answer is almost always <em>"buy or use OSS"</em>; the deeper question is which trade-off matches your cost model, compliance needs, and tolerance for vendor lock-in.</p>
+
+  <div class="cols cols-3">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Buy — IDaaS</h3>
+        <ul>
+          <li><span class="a">Auth0</span> · <span class="a">Okta</span> · <span class="a">Microsoft Entra</span></li>
+          <li><span class="a">Stytch</span> · <span class="a">WorkOS</span> · <span class="a">Clerk</span></li>
+          <li><span class="a">AWS Cognito</span> · <span class="a">Firebase Auth</span></li>
+          <li><span class="a">FusionAuth</span> · <span class="a">Descope</span></li>
+        </ul>
+        <p><strong>Best when:</strong> you need SOC 2 / FedRAMP inheritance fast, B2B SAML/SCIM out of the box, and login is not your differentiator. Cost scales per MAU.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card green">
+        <h3 class="g">Self-host — open source</h3>
+        <ul>
+          <li><span class="g">Keycloak</span> (Red Hat, Java)</li>
+          <li><span class="g">ZITADEL</span> (Go, OIDC + multi-tenant)</li>
+          <li><span class="g">Authentik</span> (Python, full IdP)</li>
+          <li><span class="g">Ory</span> (Hydra/Kratos/Keto, Go)</li>
+          <li><span class="g">Authelia</span> · <span class="g">Logto</span></li>
+        </ul>
+        <p><strong>Best when:</strong> data residency / sovereignty is a hard requirement, MAU economics break commercial, or you need deep customisation. You own the on-call.</p>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Build — almost never</h3>
+        <ul>
+          <li>Roll-your-own SAML / OIDC: <em>don't</em></li>
+          <li>Roll-your-own session cookies: <em>maybe</em></li>
+          <li>Roll-your-own AuthZ inside business code: <em>yes, but use OPA / Cedar / OpenFGA underneath</em></li>
+        </ul>
+        <p><strong>The trap:</strong> identity protocols look simple and aren't. Spend the first year on your product, not on JWT validation edge cases.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card blue" style="margin-top:0.4em;">
+    <h3 class="b">A useful split</h3>
+    <p><span class="b">AuthN + federation = buy.</span> Login is largely a solved, commoditised, and highly-attacked surface — leverage someone whose only job is keeping it correct. <span class="b">AuthZ = build, on a policy engine.</span> Authorisation is <em>your business logic</em> — what your users may do is unique to your product. Use a PDP (OPA / Cedar / OpenFGA), keep policies in your repo, and treat the engine as a library, not a product.</p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 15 — REGULATORY ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">14</span>
+    <h2>The Legal &amp; Regulatory Backdrop</h2>
+  </div>
+  <p>Almost every identity standard you'll meet exists because a regulator wrote a rule that needed wiring up. If you understand the regulation, you understand why the spec is shaped the way it is — and where the next standard is coming from.</p>
+
+  <table>
+    <thead>
+      <tr><th style="width:18%;">Regulation</th><th style="width:12%;">Force date</th><th style="width:35%;">What it requires (in identity terms)</th><th style="width:35%;">Standards / specs it produced</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="g">GDPR</span> (EU)</td>
+        <td>2018-05</td>
+        <td>Lawful basis for processing PII; right to erasure; pseudonymous IDs preferred</td>
+        <td>OIDC pairwise subjects, SCIM delete semantics, ID-token minimisation</td>
+      </tr>
+      <tr>
+        <td><span class="g">PSD2 SCA</span> (EU)</td>
+        <td>2019-09</td>
+        <td>Strong customer authentication for online payments; dynamic linking</td>
+        <td>FAPI 1.0, then FAPI 2.0; OBIE / Berlin Group profiles</td>
+      </tr>
+      <tr>
+        <td><span class="g">HIPAA</span> (US)</td>
+        <td>2003 (still)</td>
+        <td>Audit trail, MFA for PHI, BAA contracts; minimum necessary access</td>
+        <td>SAML in healthcare, SMART on FHIR (OAuth profile)</td>
+      </tr>
+      <tr>
+        <td><span class="g">CCPA / CPRA</span> (CA)</td>
+        <td>2020 / 2023</td>
+        <td>Opt-out of sale, right to know, right to delete</td>
+        <td>GPC header, SCIM delete cascade, identity-graph minimisation</td>
+      </tr>
+      <tr>
+        <td><span class="g">eIDAS 2.0</span> (EU)</td>
+        <td>2024-05</td>
+        <td>Every citizen must be able to use a state-recognised digital wallet</td>
+        <td>EUDI Wallet ARF, OpenID4VCI / VP, ISO mDL, SD-JWT</td>
+      </tr>
+      <tr>
+        <td><span class="g">DORA</span> (EU finance)</td>
+        <td>2025-01</td>
+        <td>Operational resilience; ICT third-party risk; incident reporting in hours</td>
+        <td>FAPI 2.0 baseline, OpenID Federation 1.0 trust chains</td>
+      </tr>
+      <tr>
+        <td><span class="g">EU AI Act</span></td>
+        <td>2026-08</td>
+        <td>Identity, log, and audit "high-risk" AI systems and their actions</td>
+        <td>MCP authz profile, agent-as-principal patterns, signed action logs</td>
+      </tr>
+      <tr>
+        <td><span class="g">SOC 2 / ISO 27001</span></td>
+        <td>continuous</td>
+        <td>Access reviews, MFA, audit logs, least privilege, joiner-mover-leaver</td>
+        <td>SCIM provisioning, RBAC/ABAC reviews, CAEP / SSF event streams</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card purple" style="margin-top:0.4em;">
+    <h3 class="p">The pattern</h3>
+    <p>Regulators set a behaviour requirement → standards bodies (OIDF, IETF, W3C, ISO) wire a protocol that satisfies it → vendors and OSS projects ship products that implement the protocol. Three-step flow, every time. Watch the regulators to know what's coming next.</p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 16 — ROADMAP ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">15</span>
+    <h2>How To Read This Series — Eleven Decks, One Map</h2>
+  </div>
+  <p>The decks are ordered to be read top to bottom — but each is self-contained, so you can also drop in by topic. The two halves (<span class="b">Identity &amp; Access</span> = AuthN, <span class="a">Authorisation</span> = AuthZ) interlock at the JWT / SVID / claims layer.</p>
+
+  <div class="cols cols-2">
+    <div>
+      <div class="card blue">
+        <h3 class="b">Identity &amp; Access — "who"</h3>
+        <ul>
+          <li><span class="b">0.</span> <em>(you are here)</em> Identity &amp; Authorisation Primer</li>
+          <li><span class="b">1.</span> Authentication Methods — passwords, MFA, passkeys, recovery</li>
+          <li><span class="b">2.</span> OAuth — A Gentle Primer (Part 0)</li>
+          <li><span class="b">3.</span> Introduction to OAuth (Part 1) — the protocol</li>
+          <li><span class="b">4.</span> OAuth for MCP Servers (Part 2) — agents + provider zoo</li>
+          <li><span class="b">5.</span> Introduction to OpenID Connect — IDs on top of OAuth</li>
+          <li><span class="b">6.</span> Advanced OpenID Connect — FAPI 2.0, Federation, EUDI</li>
+          <li><span class="b">7.</span> SAML 2.0 &amp; SCIM — the enterprise stack</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card amber">
+        <h3 class="a">Authorisation — "what may"</h3>
+        <ul>
+          <li><span class="a">8.</span> Authorization Models — RBAC / ABAC / ReBAC, Policy-as-Code</li>
+          <li><span class="a">9.</span> Workload Identity &amp; Service-Mesh AuthZ — east-west</li>
+          <li><span class="a">10.</span> Edge &amp; Gateway AuthZ — north-south</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">Reading order by goal</h3>
+        <ul>
+          <li><span class="g">"I'm building a SaaS login":</span> 1 → 2 → 3 → 5 → 7 → 8</li>
+          <li><span class="g">"I'm hardening an MCP / agent":</span> 2 → 3 → 4 → 10</li>
+          <li><span class="g">"I'm an SRE wiring a mesh":</span> 9 → 10 → 8</li>
+          <li><span class="g">"I'm in B2B / enterprise":</span> 7 → 5 → 6 → 8</li>
+          <li><span class="g">"I'm preparing for EU AI Act / EUDI":</span> 6 → 4 → 10 → 15</li>
+        </ul>
+      </div>
+      <div class="card purple" style="margin-top:0.4em;">
+        <h3 class="p">Companion decks (already in the index)</h3>
+        <p>Cloud `*aaS` 05 — Cloud Security · Docker for LLMs, Agents &amp; MCP · Introduction to Web Authentication · Introduction to Passport.js · Introduction to Express Middleware</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════ SLIDE 17 — TAKE-AWAYS ═══════════════════════════════ -->
+<section data-background-color="#0a0a0f">
+  <div class="slide-hdr">
+    <span class="tag">16</span>
+    <h2>Take-aways &amp; References</h2>
+  </div>
+
+  <div class="cols cols-6040">
+    <div>
+      <div class="card amber">
+        <h3 class="a">Three sentences you can screenshot</h3>
+        <ol>
+          <li><span class="a">AuthN and AuthZ are different decisions, computed by different code, against different sources.</span> Most real incidents come from confusing them.</li>
+          <li><span class="g">The whole field is sixty years of moving identity outward</span> — from a file on one machine, to a network ticket, to a federated assertion, to a user-held wallet credential, to an AI agent's token.</li>
+          <li><span class="b">Buy AuthN, build AuthZ on a policy engine.</span> Login is commoditised; what users may do is your business logic.</li>
+        </ol>
+      </div>
+      <div class="card green" style="margin-top:0.4em;">
+        <h3 class="g">Three things to do next</h3>
+        <ul>
+          <li>Open <em>Authentication Methods</em> (deck 1) and look at the AAL ladder — it tells you what "secure enough" means in your domain.</li>
+          <li>Run a one-pager that lists, for each user-facing entry point you own: <em>who validates the token? who decides the action? where is it logged?</em></li>
+          <li>Pick one authoriser in your stack and ask which threat from slide 9 it actually mitigates. If the answer is "I'm not sure", you've found a deck to read.</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card purple">
+        <h3 class="p">Canonical references</h3>
+        <ul>
+          <li>Saltzer &amp; Schroeder, "<em>The Protection of Information in Computer Systems</em>" (1975)</li>
+          <li>NIST SP 800-63-4 (Digital Identity Guidelines)</li>
+          <li>NIST SP 800-207 (Zero Trust Architecture)</li>
+          <li>OWASP API Security Top 10 (2023)</li>
+          <li>OWASP ASVS v5.0 (Application Security Verification Standard)</li>
+          <li>Aaron Parecki, "<em>OAuth 2.0 Simplified</em>"</li>
+          <li>Justin Richer &amp; Antonio Sanso, "<em>OAuth 2 in Action</em>"</li>
+          <li>Google "<em>BeyondCorp</em>" papers (2014-2017)</li>
+          <li>Google "<em>Zanzibar</em>" paper (USENIX 2019)</li>
+          <li>eIDAS 2.0 + EUDI Wallet ARF v1.4</li>
+        </ul>
+      </div>
+      <div class="card blue" style="margin-top:0.4em;">
+        <h3 class="b">Where the field is heading</h3>
+        <p>User-held credentials replacing IdP databases. Agents as first-class principals with their own audit trail. Policy engines moving into the data layer. Phishing finally dead at scale via passkeys.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script>
+  Reveal.initialize({
+    width: 1280,
+    height: 800,
+    margin: 0.04,
+    minScale: 0.2,
+    maxScale: 1.6,
+    hash: true,
+    slideNumber: 'c/t',
+    controls: true,
+    progress: true,
+    transition: 'fade'
+  });
+</script>
+</body>
+</html>
